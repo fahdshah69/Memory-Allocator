@@ -49,12 +49,16 @@ class HEAP {
 		return -1;
 	}
 
-	void setHeaderAndFooter(unsigned int start, unsigned int blockSize) {
+	void setHeaderAndFooter(unsigned int start, unsigned int blockSize, bool isAllocated = true) {
 		// Size
 		*(unsigned int*)(&heap[start]) = blockSize;
 		// Flag
-		*(unsigned int*)(&heap[start]) |= 1; // the last bit stores the state (0 = free, 1 = allocated)
-		
+		if(isAllocated)
+			*(unsigned int*)(&heap[start]) |= 1; // the last bit stores the state (0 = free, 1 = allocated)
+		else
+			*(unsigned int*)(&heap[start]) &= ~(1); // the last bit stores the state (0 = free, 1 = allocated)
+
+
 		// Offset
 		long long nextFree = nextFreeBlock(start);
 		*(unsigned int*)(&heap[start + sizeof(unsigned)]) = nextFree == -1 ? 0: (unsigned)(nextFree);
@@ -63,9 +67,12 @@ class HEAP {
 		// Size
 		*(unsigned int*)(&heap[start + blockSize + headerSize]) = blockSize;
 		// Flag
-		*(unsigned int*)(&heap[start + blockSize + headerSize]) |= 1;
+		if(isAllocated)
+			*(unsigned int*)(&heap[start + blockSize + headerSize]) |= 1;
+		else
+			*(unsigned int*)(&heap[start + blockSize + headerSize]) &= ~(1);
 
-		updateRemainingSize(blockSize);
+		updateRemainingSize(isAllocated ? blockSize: 0);
 	}
 public:
 	// Allocate heap with a constant size in bytes
@@ -137,7 +144,7 @@ public:
 		// We now have a usable block at heap[start]
 		unsigned int s = getSizeOfBlock(start);
 		setHeaderAndFooter(start, blockSize);
-		setHeaderAndFooter(start + blockSize + headerSize + footerSize, s - (blockSize + headerSize + footerSize));
+		setHeaderAndFooter(start + blockSize + headerSize + footerSize, s - (blockSize + headerSize + footerSize), false);
 		return (void*)(heap + start + headerSize);
 	}
 };
